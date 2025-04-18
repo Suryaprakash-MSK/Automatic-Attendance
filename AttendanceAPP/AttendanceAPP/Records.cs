@@ -122,102 +122,10 @@ namespace AttendanceAPP
                 MessageBox.Show($"CSV file saved successfully!\nLocation: {filePath}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
-        private void load()
-        {
-            DateTime startDate = dateTimePickerStart.Value.Date;
-            DateTime endDate = dateTimePickerEnd.Value.Date;
-
-            string query = @"
-                            SELECT 
-                                u.UserId,
-                                u.UserName,
-                                CONVERT(NVARCHAR(10), d.Date, 120) AS [Date],
-                                CASE 
-                                    WHEN a.UserId IS NOT NULL THEN 'Present'
-                                    ELSE 'Absent'
-                                END AS Status
-                            FROM Users u
-                            CROSS JOIN (
-                                SELECT DATEADD(DAY, number, @StartDate) AS Date
-                                FROM master.dbo.spt_values
-                                WHERE type = 'P' AND DATEADD(DAY, number, @StartDate) <= @EndDate
-                            ) d
-                            LEFT JOIN Attendance a 
-                                ON u.UserId = a.UserId AND a.Date = d.Date
-                            ORDER BY u.UserName, d.Date;
-                        ";
-            string connectionString = "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=C:\\Users\\Raji\\source\\repos\\AttendanceAPP\\AttendanceAPP\\Database.mdf;Integrated Security=True";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@startDate", startDate);
-                cmd.Parameters.AddWithValue("@endDate", endDate);
-
-                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                DataTable table = new DataTable();
-                adapter.Fill(table);
-                dataGridView.DataSource = table;
-            }
-
-        }
-
         private void btnGet_Click(object sender, EventArgs e)
         {
             LoadAttendanceFromStartToEnd();
             ExportbtnFilter.Enabled = true;
-        }
-        private void LoadWeeklyAttendance()
-        {
-            string connectionString = "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=C:\\Users\\Raji\\source\\repos\\AttendanceAPP\\AttendanceAPP\\Database.mdf;Integrated Security=True";
-
-            DateTime startDate = dateTimePickerStart.Value.Date;
-            DateTime endDate = dateTimePickerEnd.Value.Date;
-
-            string query = @"
-                            SELECT 
-                                u.UserName,
-                                MAX(CASE WHEN a.Date = @StartDate THEN 'Present' ELSE 'Absent' END) AS [Day1],
-                                MAX(CASE WHEN a.Date = DATEADD(DAY, 1, @StartDate) THEN 'Present' ELSE 'Absent' END) AS [Day2],
-                                MAX(CASE WHEN a.Date = DATEADD(DAY, 2, @StartDate) THEN 'Present' ELSE 'Absent' END) AS [Day3],
-                                MAX(CASE WHEN a.Date = DATEADD(DAY, 3, @StartDate) THEN 'Present' ELSE 'Absent' END) AS [Day4],
-                                MAX(CASE WHEN a.Date = DATEADD(DAY, 4, @StartDate) THEN 'Present' ELSE 'Absent' END) AS [Day5],
-                                MAX(CASE WHEN a.Date = DATEADD(DAY, 5, @StartDate) THEN 'Present' ELSE 'Absent' END) AS [Day6],
-                                MAX(CASE WHEN a.Date = DATEADD(DAY, 6, @StartDate) THEN 'Present' ELSE 'Absent' END) AS [Day7]
-                            FROM Users u
-                            LEFT JOIN Attendance a ON u.UserId = a.UserId AND a.Date BETWEEN @StartDate AND @EndDate
-                            GROUP BY u.UserName
-                            ORDER BY u.UserName;
-                            ";
-
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@startDate", startDate);
-                    cmd.Parameters.AddWithValue("@endDate", endDate);
-
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    adapter.Fill(dt);
-
-                    // Rename headers to actual dates
-                    dt.Columns["Day1"].ColumnName = startDate.ToString("yyyy-MM-dd");
-                    dt.Columns["Day2"].ColumnName = startDate.AddDays(1).ToString("yyyy-MM-dd");
-                    dt.Columns["Day3"].ColumnName = startDate.AddDays(2).ToString("yyyy-MM-dd");
-                    dt.Columns["Day4"].ColumnName = startDate.AddDays(3).ToString("yyyy-MM-dd");
-                    dt.Columns["Day5"].ColumnName = startDate.AddDays(4).ToString("yyyy-MM-dd");
-                    dt.Columns["Day6"].ColumnName = startDate.AddDays(5).ToString("yyyy-MM-dd");
-                    dt.Columns["Day7"].ColumnName = startDate.AddDays(6).ToString("yyyy-MM-dd");
-
-                    dataGridView.DataSource = dt;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading weekly attendance: " + ex.Message);
-            }
         }
         private void LoadAttendanceFromStartToEnd()
         {
